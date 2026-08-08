@@ -6,7 +6,10 @@ machine — Postgres, PostgREST, the backend, and the edge-functions runtime.
 ## When to use this
 
 Only when the user explicitly asks for a backend on their own machine: "run
-InsForge locally", "I want it in Docker", "no account".
+InsForge locally", "I want it in Docker", "run it in a container here".
+
+"No account" on its own is a constraint, not a request for Docker — ask what they
+want rather than starting containers on it.
 
 Not for offline work on its own. The first start in a directory fetches the setup
 script and pulls images, so it needs network; only later starts of an instance
@@ -27,8 +30,13 @@ A cloud project is the default for everything else.
 `--json` is a global option, not one of these commands' flags — it works on all
 three.
 
-After `local start` the directory is linked, so every other CLI command targets
-the local backend with no login.
+After `local start` the directory is linked, so project-scoped commands — `db`,
+`storage`, `functions`, `secrets`, `schedules`, `logs`, `metadata` — target the
+local backend with no login.
+
+Platform commands still reach InsForge Cloud and still need an account:
+`whoami`, `list`, `orgs`, `billing`, `usage`, `create`. A linked local instance
+does not change what those talk to.
 
 ## Credentials
 
@@ -54,7 +62,10 @@ into `.insforge/checkout/`, then runs the compose file that script wrote — the
 same one self-hosting uses. The CLI adds one overlay: the telemetry stamp, and
 loopback binding for the published ports.
 
-`.insforge/checkout/.env` holds the generated secrets. If it goes missing while
+`.insforge/checkout/.env` holds the generated secrets. `local start` writes
+`.insforge/.gitignore` covering `checkout/`, so `git add -A` cannot commit them —
+but nothing stops a command from printing the file, so do not cat it into output
+you keep. If it goes missing while
 volumes still exist, `local start` refuses instead of generating new ones —
 Postgres reads its password only at cluster creation, so fresh secrets would leave
 the database unreachable. Restore the file, or `local stop --delete-data`.
@@ -79,8 +90,9 @@ hosted project instead — offer it, but do not switch to it on your own.
 **Using `local` as a fallback when authentication is inconvenient.** A local
 instance is a different backend with different data, so starting one to work
 around a login problem silently moves the user off the project they meant to use.
-When `login` fails or no browser is available, use `login --user-api-key`,
-`login --device`, or `create`.
+When `login` fails or no browser is available, use `login --user-api-key` or
+`login --device`. Not `create` — it calls the platform API and needs the same
+authentication that just failed.
 
 **Pointing a server deployment at `local start`.** See below.
 
