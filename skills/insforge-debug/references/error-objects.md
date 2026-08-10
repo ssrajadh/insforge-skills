@@ -55,6 +55,7 @@ The status alone doesn't tell you which subsystem timed out. Route by the URL pa
 | `/api/auth/...` | Auth backend | [logs](logs.md) `insforge.logs` |
 | `/api/storage/...` | Storage | [logs](logs.md) `insforge.logs` |
 | Any path during a system-wide spike | EC2 saturation | [metrics](metrics.md) `--range 1h` |
+| Intermittent, across *unrelated* paths, small instance | Likely OOM | The gateway-timeout recipe's OOM branch in the skill: confirm crash-recovery aftermath in `postgres.logs`, then upgrade the instance |
 
 ## Example
 

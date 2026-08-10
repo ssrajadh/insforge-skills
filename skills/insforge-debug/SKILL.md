@@ -147,7 +147,9 @@ timeouts hitting database, auth, and functions alike are the classic out-of-memo
 the smallest instance sizes: the kernel kills Postgres, every in-flight request times out at the
 gateway while crash recovery runs, and it repeats on the next load spike. Confirm in **logs**
 (`postgres.logs`) via the crash-recovery aftermath — "terminating connection because of crash of
-another server process" / "automatic recovery in progress"
+another server process" / "automatic recovery in progress" — **time-correlated with the 5xx
+burst**: recovery evidence alone only proves an unclean Postgres restart, so the timestamps must
+line up before OOM becomes the leading diagnosis
 ([references/metrics.md](references/metrics.md)). With that evidence the fix is headroom, not a
 retry loop:
 
