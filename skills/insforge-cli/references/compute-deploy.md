@@ -1,11 +1,5 @@
 # npx -y @insforge/cli compute deploy — deploy a backend container
 
-> 🔒 **Private preview.** Compute services are not yet generally available.
-> Access is gated per-project; the API, CLI flags, error codes, and quotas
-> may change between releases. To request access, raise quotas, configure a
-> private registry, or report issues, contact the InsForge team
-> (support@insforge.dev or your shared Slack channel).
-
 > 🔧 **DO NOT call `flyctl` directly to manage InsForge compute services.**
 > InsForge runs containers on Fly.io under the hood, but the Fly account, org,
 > IPs, and machine ownership all live on the InsForge cloud. Using `flyctl`
@@ -269,8 +263,8 @@ A: Use `compute update <service-id> --image <new-image-url>`. The machine is res
 **Q: What happens to my service if Fly.io has an outage?**
 A: It's down. InsForge runs your containers on Fly's infrastructure — Fly's uptime is your uptime. For HA, you'd typically deploy multiple services in different regions (future feature).
 
-**Q: Why is the first request after idle slow?**
-A: v1 services scale to zero when idle and wake on the next request (~1s cold start on `shared-1x`). No flag to disable in v1; contact support if you need always-on.
+**Q: Do services scale to zero when idle, or stay always-on?**
+A: Your choice, made at deploy time — the default is **always-on**. Image-mode machines are launched without autostop, and the CLI-generated source-mode config sets `auto_stop_machines = false`, so by default a service runs continuously until you run `compute stop` or the container process exits. To opt into **scale-to-zero**, deploy in source mode with your own `fly.toml` (the CLI leaves an existing `fly.toml` untouched) and set `auto_stop_machines = "stop"` with `min_machines_running = 0`; a stopped machine wakes on the next request. A slow first request on an always-on service is app-level cold work (cache warming, re-opening DB connections), not a platform cold start.
 
 **Q: I see `MANIFEST_UNKNOWN` in a stack trace. What is it?**
 A: After `flyctl` pushes your image, Fly asynchronously aliases the digest from the builder's namespace to your app's namespace. Until that propagates (usually < 8 s) the Machines API returns `400 MANIFEST_UNKNOWN` even though the digest is correct. The InsForge cloud silently retries 4 times with backoff `[2s, 4s, 8s]`, so you almost never see it. If retries exhaust, you get a structured `COMPUTE_IMAGE_NOT_AVAILABLE` 400 with `nextActions` telling you to re-run — re-runs are idempotent and typically succeed instantly because the alias has had time to propagate.
