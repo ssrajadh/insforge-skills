@@ -156,8 +156,10 @@ retry loop:
 1. **Upgrade the instance** — `npx -y @insforge/cli projects upgrade-instance <type>`
    (`nano` → `micro` → `small` → `medium` → `large` → `xl`), or dashboard → Project Settings →
    Compute & Disk. On the free plan, upgrade to a paid plan first, then pick the size. The
-   resize is async — poll `projects get` until `operation_status` clears before declaring the
-   incident resolved.
+   resize changes the bill and the CLI asks for interactive confirmation — get the user's
+   go-ahead first, then run unattended with the CLI-level `--yes` (the `-y` in `npx -y` is
+   npm's install flag, not the confirm-skip). The resize is async — poll `projects get` until
+   `operation_status` clears before declaring the incident resolved.
 2. The resize **restarts the project as part of the change**, which also clears any wedged
    state — there is no separate user-facing restart, and a bare restart would only buy minutes
    before the next spike OOMs again. OOM under real load on the smallest sizes is common and
