@@ -49,6 +49,10 @@ Escalate from "normal" to "needs headroom" only on real pressure evidence:
   crash-recovery aftermath in `postgres.logs`: "terminating connection because of crash of another
   server process" or "database system was not properly shut down; automatic recovery in progress".
   There is no dedicated OOM log source, so look for that aftermath, not an OOM line.
+- **Gateway 502/503/504 bursts across unrelated paths** — while crash recovery runs, every
+  in-flight request times out at the gateway regardless of subsystem; on the smallest instance
+  sizes this is the most common way an OOM actually surfaces to users (see the gateway-timeout
+  recipe in the skill).
 - **Rising trend** across `24h`/`7d` (a leak climbs; the buffer cache is ~flat from startup)
 - Performance actually degrading alongside it (pair with [db-health](db-health.md))
 

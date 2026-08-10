@@ -142,6 +142,29 @@ Route by URL subsystem before drilling:
 | `/api/auth/...` | **logs** (`insforge.logs`) |
 | Any path during system-wide spike | **metrics** (`--range 1h`) |
 
+**504s across *unrelated* paths on a small instance: suspect OOM first.** Intermittent gateway
+timeouts hitting database, auth, and functions alike are the classic out-of-memory signature on
+the smallest instance sizes: the kernel kills Postgres, every in-flight request times out at the
+gateway while crash recovery runs, and it repeats on the next load spike. Confirm in **logs**
+(`postgres.logs`) via the crash-recovery aftermath — "terminating connection because of crash of
+another server process" / "automatic recovery in progress" — **time-correlated with the 5xx
+burst**: recovery evidence alone only proves an unclean Postgres restart, so the timestamps must
+line up before OOM becomes the leading diagnosis
+([references/metrics.md](references/metrics.md)). With that evidence the fix is headroom, not a
+retry loop:
+
+1. **Upgrade the instance** — `npx -y @insforge/cli projects upgrade-instance <type>`
+   (`nano` → `micro` → `small` → `medium` → `large` → `xl`), or dashboard → Project Settings →
+   Compute & Disk. On the free plan, upgrade to a paid plan first, then pick the size. The
+   resize changes the bill and the CLI asks for interactive confirmation — get the user's
+   go-ahead first, then run unattended with the CLI-level `--yes` (the `-y` in `npx -y` is
+   npm's install flag, not the confirm-skip). The resize is async — poll `projects get` until
+   `operation_status` clears before declaring the incident resolved.
+2. The resize **restarts the project as part of the change**, which also clears any wedged
+   state — there is no separate user-facing restart, and a bare restart would only buy minutes
+   before the next spike OOMs again. OOM under real load on the smallest sizes is common and
+   expected, not a bug.
+
 ### Recipe: Pre-launch / proactive audit
 
 > Requires Platform login (`npx -y @insforge/cli login`). **Not available when the project is linked via `--api-key`** — fall back to `db-health` + `policies` + `metadata` for a manual audit in that case.
