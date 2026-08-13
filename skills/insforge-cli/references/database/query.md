@@ -72,6 +72,39 @@ END
 
 The `BEGIN` inside the `DO` block is the PL/pgSQL block keyword, not a transaction statement, so it is allowed.
 
+#### Shell Quoting for `$$`
+
+The example above is written for bash/zsh, where the dollar quotes must be escaped as `\$\$` — unescaped, bash expands `$$` to the shell's PID and sends `DO 4812 ... 4812`. That escaping is bash-specific. Reuse it verbatim in another shell and the CLI receives mangled SQL and reports:
+
+```
+Error: Query could not be parsed and was rejected for security reasons.
+```
+
+**PowerShell:** `\` is not an escape character, and `$$` is an automatic variable that expands to empty inside double quotes — so `"DO $$ ... $$"` silently arrives as `DO  ... ` and `"DO \$\$ ... \$\$"` as `DO \ ... \`. Pass the block as a single-quoted here-string, which is fully literal, so neither `$$` nor the inner `'...'` literals need escaping:
+
+```powershell
+$sql = @'
+DO $$
+DECLARE
+  updated_count integer;
+BEGIN
+  UPDATE posts SET status = 'draft' WHERE status IS NULL;
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  IF updated_count > 100 THEN
+    RAISE EXCEPTION 'guard failed: % rows matched, expected at most 100', updated_count;
+  END IF;
+  -- Validation passed; raise anyway so the statement rolls back
+  RAISE EXCEPTION 'rehearsal ok: % rows would be updated (rolled back)', updated_count;
+END
+$$
+'@
+npx -y @insforge/cli db query $sql
+```
+
+**cmd.exe:** `$` is literal, so write `"DO $$ ... $$"` unescaped, with the whole block on one line — cmd.exe has no multi-line string. In a `.bat` file, also double every `%` in the `RAISE EXCEPTION` format strings (`%%`).
+
+Do not "fix" the escaping by wrapping the whole block in single quotes in bash/zsh. Each inner `'` closes the quote, so `'draft'` loses its quotes and reaches Postgres as the identifier `draft`, and the freed text is re-read as shell syntax — bash rejects the `(` in `(rolled back)` outright.
+
 **A rehearsal always ends as a failed command.** Rolling back means raising, so the command writes to stderr and exits non-zero (`1`) on both the pass and the fail path — that is the expected outcome, not a broken query. Read the message to tell them apart:
 
 | Output on stderr | Meaning |
