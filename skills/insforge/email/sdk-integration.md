@@ -23,11 +23,27 @@ const insforge = createClient({
 
 `emails.send` requires an authenticated caller — **the anon key is not sufficient.** A signed-out client sends its anon key as the bearer credential, and the route rejects that with `401 Sending emails requires an authenticated user`. Sign the user in first: the SDK swaps the anon key for that user's JWT on the same client, and the call then succeeds.
 
-For server-only code with no signed-in user, authenticate as project admin instead — `createAdminClient({ baseUrl, apiKey })`, see [SKILL.md](../SKILL.md).
+For server-only code with no signed-in user, authenticate as project admin instead:
+
+```javascript
+import { createAdminClient } from '@insforge/sdk'
+
+const admin = createAdminClient({
+  baseUrl: process.env.INSFORGE_URL,
+  apiKey: process.env.INSFORGE_API_KEY
+})
+```
+
+`admin.emails.send()` takes the same options as the examples below. Keep the API key server-side — it is a full-access admin key. See [SKILL.md](../SKILL.md).
 
 ## Send an Email
 
 ```javascript
+// emails.send uses whatever credential the client is holding, so the user
+// must be signed in (see ../auth/sdk-integration.md for the sign-in flows).
+const { data: auth } = await insforge.auth.getCurrentUser();
+if (!auth?.user) return; // signed out: the send would 401
+
 const { data, error } = await insforge.emails.send({
   to: 'user@example.com',
   subject: 'Welcome to Acme',
