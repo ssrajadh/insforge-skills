@@ -2,7 +2,7 @@
 
 Send custom transactional HTML emails via `insforge.emails.send`. Routes through AWS SES under per-project tenant identities, with automatic List-Unsubscribe headers and unsubscribe filtering.
 
-> **🛑 No SMTP, no third-party packages.** `insforge.emails.send()` works on every paid project — no `nodemailer` / `resend` / `sendgrid` / `mailgun` / `postmark`, no `SMTP_HOST`, no API keys. The platform manages the SES sender. Custom sender domain → dashboard, not `package.json`.
+> **🛑 No SMTP, no third-party packages.** `insforge.emails.send()` works on every paid project — no `nodemailer` / `resend` / `sendgrid` / `mailgun` / `postmark`, no `SMTP_HOST`, no provider API keys. The platform manages the SES sender. Server-only sends still authenticate with your own project API key (see below) — that is InsForge auth, not an email-provider credential. Custom sender domain → dashboard, not `package.json`.
 >
 > **Scope.** This module sends **custom** transactional emails (welcome, receipt, newsletter, alerts). For auth flows (signup verification, password reset, invites), use `insforge.auth.*` — those ship on **every plan**, also no SMTP.
 
@@ -137,7 +137,7 @@ Success: `HTTP 200` with body `{}` (REST endpoint omits the wrapping; SDK adds `
 | `On-demand email service is only available for paid plans` | Free tier project | Upgrade billing in the InsForge dashboard |
 | `Rate limit exceeded. Try again in N minutes` | Hourly send cap reached | Wait `rateLimit.resetIn` seconds and retry, or upgrade plan |
 | `Invalid ARN provided` | Backend infra config issue (missing `AWS_ACCOUNT_ID` env on the cloud backend) | Not a client bug — file with InsForge support |
-| `Sending emails requires an authenticated user` (401) | Called with the anon key — no user is signed in | Sign the user in and retry on the same client (the SDK sends their JWT), or call server-side with a project admin API key. Re-checking `anonKey` will not fix this |
+| `Sending emails requires an authenticated user` (`401 AUTH_INVALID_CREDENTIALS`) | Called with the anon key — no user is signed in | Sign the user in and retry on the same client (the SDK sends their JWT), or call server-side with a project admin API key. Re-checking `anonKey` will not fix this |
 | `401 Unauthorized` | Missing, malformed, or expired `Authorization` header | Confirm the header is sent; if a user JWT has expired, refresh the session and retry |
 | Email lands in spam | Cold SES tenant reputation | Warm up with a few low-volume sends; use a recognizable display name; avoid spammy HTML and link-heavy bodies |
 
