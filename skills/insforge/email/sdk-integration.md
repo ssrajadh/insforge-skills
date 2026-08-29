@@ -40,10 +40,11 @@ const admin = createAdminClient({
 
 ```javascript
 // emails.send uses whatever credential the client is holding, so the user
-// must be signed in first — any flow in ../auth/sdk-integration.md works.
+// must be signed in first. Any flow in ../auth/sdk-integration.md works;
+// substitute the credentials your own sign-in form collects.
 const { error: signInError } = await insforge.auth.signInWithPassword({
   email: 'user@example.com',
-  password: process.env.DEMO_PASSWORD,
+  password: 'securepassword123',
 });
 if (signInError) throw signInError;
 
