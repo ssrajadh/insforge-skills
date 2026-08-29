@@ -34,15 +34,18 @@ const admin = createAdminClient({
 })
 ```
 
-`admin.emails.send()` takes the same options as the examples below. Keep the API key server-side — it is a full-access admin key. See [SKILL.md](../SKILL.md).
+`admin.emails.send()` takes the same options as the examples below. Get the key with `npx -y @insforge/cli secrets get API_KEY` and keep it server-side — it is a full-access admin key, never a client bundle. See [SKILL.md](../SKILL.md).
 
 ## Send an Email
 
 ```javascript
 // emails.send uses whatever credential the client is holding, so the user
-// must be signed in (see ../auth/sdk-integration.md for the sign-in flows).
-const { data: auth } = await insforge.auth.getCurrentUser();
-if (!auth?.user) return; // signed out: the send would 401
+// must be signed in first — any flow in ../auth/sdk-integration.md works.
+const { error: signInError } = await insforge.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: process.env.DEMO_PASSWORD,
+});
+if (signInError) throw signInError;
 
 const { data, error } = await insforge.emails.send({
   to: 'user@example.com',
